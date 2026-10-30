@@ -1,0 +1,27 @@
+{
+  "dataset": "QASPER v0.3",
+  "original_split": "dev/validation",
+  "new_split": "train",
+  "dev_papers": 272,
+  "train_papers": 28,
+  "questions": 300,
+  "distinct_papers": 300,
+  "model_responses": 600,
+  "length_group_counts": {
+    "short": 100,
+    "medium": 100,
+    "long": 100
+  },
+  "train_group_counts": {
+    "short": 9,
+    "medium": 10,
+    "long": 9
+  },
+  "short_upper": 3631,
+  "medium_upper": 5534,
+  "document_proxy_tokenizer": "cl100k_base",
+  "max_doc_proxy_tokens": 16000,
+  "random_seed": 42,
+  "sampling_rule": "fixed-seed random one-question-per-new-paper from eligible QASPER train papers",
+  "reason_for_extension": "extend 272 dev papers to exactly 300 distinct papers; exploratory split extension"
+}
