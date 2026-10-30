@@ -1,3 +1,4 @@
 requests
 rank-bm25
 tiktoken
+matplotlib
