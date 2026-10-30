@@ -1,51 +1,75 @@
 # RAG vs. Long-Context Prompting for Document Question Answering
 
-A scientific-method course project comparing **retrieval-augmented generation (RAG)** and **long-context prompting (LCP)** on questions about research papers.
+**KTH Royal Institute of Technology · II2202 Scientific Method · Autumn 2026**  
+**Group 6:** Qiaoyu Wan and Yijia Liu
 
-**Course:** II2202 Scientific Method, KTH Royal Institute of Technology, Autumn 2026  
-**Authors:** Qiaoyu Wan and Yijia Liu
+This project compares **Retrieval-Augmented Generation (RAG)** and **Long-Context Prompting (LCP)** for question answering over scientific papers.
 
 ## Research questions
 
-1. How does document length affect answer quality for RAG and LCP?
-2. How does answer quality differ between single-hop and multi-hop questions?
-3. How do response latency and token usage change with document length?
+1. **RQ1 — Document length:** How does document length affect RAG/LCP answer quality?
+2. **RQ2 — Reasoning type:** How does answer quality differ between single-hop and multi-hop questions?
+3. **RQ3 — Efficiency:** How do latency and token consumption change with document length?
 
-## Final experimental configuration
+## Experiment
 
-- **Dataset:** QASPER v0.3; 300 questions from 300 distinct scientific papers (272 development, 28 training papers)
-- **Model:** Gemma 3 4B running locally via Ollama for both approaches
-- **RAG:** BM25; 240-word chunks; 40-word overlap; top 5 passages
-- **LCP:** full extracted paper as the context
-- **Controls:** same model, questions, prompt instructions, and generation settings
-- **Metrics:** word/token-overlap F1, end-to-end latency, input + output tokens
-- **Statistical analysis:** paired bootstrap confidence intervals for differences in F1
+- **Dataset:** QASPER v0.3; 300 questions from **300 distinct scientific papers** (272 development, 28 training).
+- **Document length:** short (≤ 3,631 proxy tokens), medium (3,632–5,534), long (5,535–16,000), with 100 questions in each group. The proxy tokenizer is `cl100k_base`, not the Gemma model tokenizer.
+- **Model:** Gemma 3 4B running locally through Ollama, identical for both methods.
+- **Generation:** temperature 0, context window 32,768 tokens, maximum output 160 tokens.
+- **RAG:** BM25, 240-word chunks, 40-word overlap, top 5 retrieved chunks.
+- **LCP:** entire extracted paper supplied as context without retrieval.
+- **Metrics:** token-level answer F1; end-to-end response latency; model input + output tokens.
+- **Statistics:** paired bootstrap with 4,000 resamples and 95% percentile confidence intervals for LCP minus RAG F1 differences.
 
-## Summary of final results
+## Results
 
-| Approach | Mean F1 | Mean latency | Mean tokens |
-| --- | ---: | ---: | ---: |
-| RAG | 0.318 | 2.58 s | 1,698 |
-| LCP | 0.340 | 3.16 s | 4,869 |
+| Method | Questions | Overall mean F1 | Mean latency | Mean total tokens |
+| --- | ---: | ---: | ---: | ---: |
+| RAG | 300 | 0.318 | 2.58 s | 1,698 |
+| LCP | 300 | 0.340 | 3.16 s | 4,869 |
 
-LCP achieved a slightly higher mean F1 in the tested configuration, while RAG required less time and fewer tokens. Document-length-group confidence intervals included zero; therefore, the observed ranking reversal does **not** establish a statistically reliable crossover threshold. The multi-hop subset contained only 32 questions, so interpretation is cautious.
+**RQ1:** The LCP–RAG mean F1 differences were +0.0456 (short), −0.0025 (medium), and +0.0237 (long). **All three 95% confidence intervals include zero**; an observed change in ranking is not evidence of a statistically established document-length crossover.
 
-See `data/summary_statistics.csv` for aggregate results.
+**RQ2:** The final labels consist of 206 single-hop, 32 multi-hop, and 62 ambiguous questions. The ambiguous group is excluded from the RQ2 comparison, but retained for RQ1 and RQ3. For multi-hop questions, the LCP–RAG mean F1 difference was +0.0722, 95% CI [+0.0010, +0.1520]. This exploratory subgroup has only 32 questions and should be interpreted cautiously.
 
-## Files
+**RQ3:** Under the tested configuration, RAG used fewer model tokens and achieved lower mean latency, while LCP had modestly higher mean answer F1.
 
-- `src/experiment.py`: initial local QASPER preparation, retrieval, Ollama inference, scoring, and summaries (150-question phase).
-- `src/extend_to_300_papers.py`: later extension workflow combining prior experiment outputs and 28 additional training-split papers to form 300 distinct-paper evaluation instances.
-- `requirements.txt`: Python packages used by the scripts.
-- `data/summary_statistics.csv`: aggregate results only.
+## Repository contents
 
-**Reproducibility note:** These scripts reflect the research workflow and are provided for inspection. The 300-paper extension expects intermediate files produced in additional experimental phases. Those intermediate scripts and full per-question data are **not** included here, so the public repository is not yet a one-command reproduction of the complete final experiment.
+| Path | Description |
+| --- | --- |
+| `data/results_300_papers.csv` | **Final 600 model responses** with question/paper IDs, method, predictions, F1/EM, latency, and token counts |
+| `data/questions_300_index.csv` | **All 300 selected questions**, paper IDs, document groups, and reference answers; extracted paper texts and supporting passages omitted |
+| `data/rq2_labels_300_papers.csv` | Final 300 question-type labels and annotation reasons |
+| `data/rq2_summary_300_papers.csv` | Single-hop and multi-hop descriptive statistics |
+| `data/rq2_bootstrap_ci.csv` | Final RQ2 paired bootstrap confidence intervals |
+| `data/sampling_metadata_300_papers.json` | Sampling and document-length boundary metadata |
+| `analysis/analyze_final.py` | Self-contained post-experiment verifier; recomputes paired CIs and regenerates four charts |
+| `figures/` | Four **actual final-experiment** F1, latency, and token-usage charts |
+| `src/experiment.py` | Initial QASPER / Ollama inference, scoring, and visualization code |
+| `src/extend_to_300_papers.py` | Original final 300-distinct-paper extension workflow |
+| `src/merge_rq2_final.py` | Original code used to merge manually reviewed RQ2 annotations |
 
-## Setup
+The `analysis/analyze_final.py` utility was prepared from the final released CSV/labels to simplify independent **verification of the reported analysis**. The original inference scripts are preserved separately.
 
-1. Install Python dependencies with `pip install -r requirements.txt`.
-2. Install [Ollama](https://ollama.com/), then fetch the model: `ollama pull gemma3:4b`.
-3. From the `src/` folder run `python experiment.py prepare` to retrieve the QASPER v0.3 train/dev archive and prepare the initial sample.
-4. See the docstrings of each script for available commands and expected input files.
+## Reproduce the final analysis
 
-Raw QASPER paper texts, full model outputs, student peer-review documents, and private course submissions are intentionally not published in this repository. Obtain the original QASPER dataset from its official source and respect its license and citation requirements.
+Requires Python 3.10 or newer:
+
+```bash
+pip install -r requirements.txt
+python analysis/analyze_final.py
+```
+
+This script validates all 300 question pairs and question-type assignments, reproduces the overall means and the RQ1/RQ2 paired-bootstrap confidence intervals, and regenerates four charts under `figures/reproduced/`.
+
+**Scope of reproducibility:** The included final data are sufficient to reproduce the published aggregate statistics, paired CIs, and figures. **Rerunning the 600 Ollama inferences from scratch is not yet a one-command operation:** the original 300-paper extension script depends on separate intermediate outputs from earlier experiment phases that are not included here. It also requires the QASPER source data and the specified local model environment. The precise Ollama model build/digest and complete package version lockfile are not archived.
+
+## Dataset attribution and redistribution
+
+QASPER is distributed by the Allen Institute for AI under **CC BY 4.0**. See the [QASPER dataset page](https://huggingface.co/datasets/allenai/qasper), the [license](https://creativecommons.org/licenses/by/4.0/), and its paper:
+
+> Pradeep Dasigi, Kyle Lo, Iz Beltagy, Arman Cohan, Noah A. Smith, and Matt Gardner (2021). *A Dataset of Information-Seeking Questions and Answers Anchored in Research Papers.* NAACL-HLT 2021.
+
+The provided `questions_300_index.csv` is an adapted subset of QASPER annotations, identified by their original question and paper IDs. It omits extracted full-paper texts and the original supporting-evidence passages. The original dataset and individual research papers remain attributable to their respective sources. Do not commit the raw QASPER archive, extracted full-paper files, peer-review materials, credentials, or private student submissions.
