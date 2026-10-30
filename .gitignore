@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Raw datasets, inference outputs, and local artifacts
+src/data/
+data/raw/
+data/private/
+*.tgz
+*.tar.gz
+*.log
+.ipynb_checkpoints/
