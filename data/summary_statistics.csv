@@ -1,0 +1,3 @@
+method,n_questions,mean_F1,mean_latency_seconds,mean_total_tokens
+RAG,300,0.318,2.58,1698
+LCP,300,0.340,3.16,4869
